@@ -2044,7 +2044,14 @@
         criado_em:r.criado_em
       }));
       if (JSON.stringify(novos) !== JSON.stringify(chamados)) {
-        if (usuarioAtual.tipo === 'admin' && chamados.length > 0 && novos.length > chamados.length) { tocarSomNotificacao(); showToast('🔔 Novo chamado recebido!'); }
+        if (usuarioAtual.tipo === 'admin' && chamados.length > 0) {
+          const IDsAtuais = chamados.map(c => c.id);
+          const temNovo = novos.some(n => !IDsAtuais.includes(n.id));
+          if (temNovo) {
+            tocarSomNotificacao();
+            showToast('🔔 Novo chamado recebido!');
+          }
+        }
         chamados = novos;
         if(usuarioAtual.tipo==='admin') { atualizarStats(); renderLista(); }
       }
@@ -2085,14 +2092,16 @@
     if(!local||!urgencia||!problema) { showToast('Preencha todos os campos obrigatórios.',true); return; }
     try {
       const [novo]=await sb.post('chamados',{nome_solicitante:nome,local,urgencia,problema,status:'aberto',usuario_id:usuarioAtual.id});
-      chamados.unshift({
+      const formatado = {
         id:novo.id,local:novo.local,urgencia:novo.urgencia,problema:novo.problema,
         nome_solicitante:novo.nome_solicitante||nome,
         status:novo.status,usuario_id:novo.usuario_id,
         data:new Date(novo.criado_em).toLocaleDateString('pt-BR'),
         hora:new Date(novo.criado_em).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}),
         criado_em:novo.criado_em
-      });
+      };
+      chamados.unshift(formatado);
+      if(usuarioAtual.tipo==='admin') { tocarSomNotificacao(); }
       ['local','urgencia','problema'].forEach(id=>document.getElementById(id).value='');
       document.getElementById('nome-solicitante').value='';
       document.getElementById('local-custom').value='';
