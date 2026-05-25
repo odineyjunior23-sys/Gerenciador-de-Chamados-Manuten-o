@@ -898,7 +898,7 @@
   }
 
   .sp-aberto  { background: #E0F2FE; color: #0369A1; }
-  .sp-fechado { background: #F1F5F9; color: #475569; }
+  .sp-fechado { background: #dcfce7; color: #15803d; } /* Verde para fechado */
 
   .action-buttons {
     display: flex;
@@ -1649,8 +1649,8 @@
     <div class="panel">
       <div class="panel-header">
         <div class="panel-header-left">
-          <div class="panel-dot"></div>
-          <span class="panel-title">Lista de chamados</span>
+<div class="panel-dot" id="panel-dot-historico"></div>
+          <span class="panel-title" id="panel-lista-titulo">Lista de chamados</span>
         </div>
         <div class="panel-actions">
           <button class="btn-export" onclick="exportarExcel()">📊 Excel</button>
@@ -1918,13 +1918,22 @@
         document.getElementById('main').classList.add('admin-view');
         document.getElementById('stats-bar').style.display  = 'grid';
         document.getElementById('lista-panel').style.display = 'block';
+        document.getElementById('panel-lista-titulo').textContent = 'Lista de chamados';
+        document.querySelector('#lista-panel .panel-actions').style.display = 'flex';
+        document.querySelector('#lista-panel .list-controls').style.display = 'flex';
+        document.getElementById('panel-dot-historico').style.background = 'var(--pri)';
       } else {
         document.getElementById('main').classList.remove('admin-view');
         document.getElementById('stats-bar').style.display  = 'none';
-        document.getElementById('lista-panel').style.display = 'none';
+        document.getElementById('lista-panel').style.display = 'block';
+        document.getElementById('panel-lista-titulo').textContent = 'Meu histórico de chamados';
+        document.querySelector('#lista-panel .panel-actions').style.display = 'none';
+        document.querySelector('#lista-panel .list-controls').style.display = 'none';
+        document.getElementById('panel-dot-historico').style.background = '#22c55e'; // Verde para usuário
       }
       await carregarChamados();
       intervalChamados = setInterval(carregarChamados, 5000);
+      intervalRealtime = setInterval(carregarChamadosRealtime, 2000);
     } catch(e) { err('❌ Erro ao conectar: '+e.message); }
   }
 
@@ -2053,7 +2062,7 @@
           }
         }
         chamados = novos;
-        if(usuarioAtual.tipo==='admin') { atualizarStats(); renderLista(); }
+        atualizarStats(); renderLista();
       }
     } catch(e) { showToast('Erro ao carregar chamados: '+e.message,true); }
   }
@@ -2076,7 +2085,7 @@
       if (JSON.stringify(novos) !== JSON.stringify(chamados)) {
         if (usuarioAtual.tipo === 'admin' && novos.length > chamados.length) { tocarSomNotificacao(); showToast('🔔 Novo chamado recebido!'); }
         chamados = novos;
-        if(usuarioAtual.tipo==='admin') { atualizarStats(); renderLista(); }
+        atualizarStats(); renderLista();
       }
     } catch(e) { console.warn('Quick Update falhou'); }
   }
@@ -2107,7 +2116,7 @@
       document.getElementById('local-custom').value='';
       document.getElementById('local-custom-wrap').style.display='none';
       document.getElementById('previa').classList.remove('active');
-      if(usuarioAtual.tipo==='admin') { atualizarStats(); renderLista(); }
+      atualizarStats(); renderLista();
       showToast('Chamado #'+String(novo.id).padStart(4,'0')+' aberto com sucesso!');
     } catch(e) { showToast('Erro ao criar chamado: '+e.message,true); }
   }
@@ -2258,9 +2267,11 @@
         <div class="chamado-actions">
           <span class="status-pill sp-${c.status}">${c.status==='aberto'?'Aberto':'Fechado'}</span>
           <div class="action-buttons">
-            ${c.status==='aberto'?`<button class="btn-action" onclick="abrirEdicao(${c.id})">Editar</button>`:''}
-            ${c.status==='aberto'?`<button class="btn-action" onclick="fecharChamado(${c.id})">Fechar</button>`:`<button class="btn-action" onclick="reabrirChamado(${c.id})">Reabrir</button>`}
-            <button class="btn-action danger" onclick="excluirChamado(${c.id})">Excluir</button>
+            ${usuarioAtual.tipo === 'admin' ? `
+              ${c.status==='aberto'?`<button class="btn-action" onclick="abrirEdicao(${c.id})">Editar</button>`:''}
+              ${c.status==='aberto'?`<button class="btn-action" onclick="fecharChamado(${c.id})">Fechar</button>`:`<button class="btn-action" onclick="reabrirChamado(${c.id})">Reabrir</button>`}
+              <button class="btn-action danger" onclick="excluirChamado(${c.id})">Excluir</button>
+            ` : ``}
           </div>
         </div>
       </div>`).join('');
